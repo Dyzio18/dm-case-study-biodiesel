@@ -350,18 +350,16 @@ Analizowane dane nie miały postaci szeregu czasowego w związku z tym model ten
 Temperatura miała największy wpływ na wydajność, a następnie czas reakcji i ciśnienie. Przy zwiększonej masie cząsteczkowej alkoholi, względne znaczenie temperatury dla wyjaśnienia wydajności spadło, a względne znaczenie czasu i ciśnienia wzrosło. Ocena ekonomiczna wykazała, że transestryfikacja w metanolu nadkrytycznym ma najniższe bezpośrednie koszty materiałowe i energetyczne. Wydajność ma decydujący wpływ na ekonomikę procesu. Bezpośrednie koszty maleją wraz ze wzrostem wydajności biodiesla.
  
 Pierwotne parametry do uzyskania wysokiej konwersji transestryfikacji były wysokie
-temperatura (330-350 ° C), wysokie ciśnienie (19-35 MPa) i wysoki stosunek molowy alkoholu do oleju
-(1:40 - 1:42). Rzeczywiście, wysoka temperatura i ciśnienie wymagają zarówno drogiego reaktora
-oraz wyrafinowaną politykę zarządzania energią i bezpieczeństwem. W wyniku wysokiej alkoholu do
-stosunek molarny oleju, duże zużycie energii w etapach wstępnego podgrzewania i recyklingu substratów
-jest wymagane. Ponadto wysoka zawartość alkoholu w produkcie biodiesel opóźnia
+temperatura (300-350 ° C), wysokie ciśnienie (8-12 MPa) i wysoki stosunek molowy alkoholu do oleju
+(1:40 - 1:42). Wysoka temperatura i ciśnienie wymagają zarówno drogiego reaktora
+oraz wyrafinowaną politykę zarządzania energią i bezpieczeństwem. W wyniku wysokiej zawartości alkoholu do
+stosunek molowego oleju, duże zużycie energii w etapach wstępnego podgrzewania i recyklingu substratów
+które jest wymagane. Ponadto wysoka zawartość alkoholu w produkcie biodiesel opóźnia
 Rozdzielanie faz biodiesla i glicerolu. Dlatego też uzyskuje się wykorzystanie tych pierwotnych parametrów
 wysokie koszty inwestycyjne, zwłaszcza w przypadku reaktora i pompy, są nieco wyższe niż w przypadku reaktora
-nowatorskie metody katalityczne.
+nowatorskiej metody katalitycznej.
 Aby zwiększyć techniczną i ekonomiczną wykonalność transestryfikacji nadkrytycznej,
-wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów operacyjnych
-ten proces. Na przykład można poprawić integrację systemu ogrzewania i chłodzenia
-(zmniejszyć) zapotrzebowanie na energię.
+wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów operacyjnych ten proces. Na przykład można poprawić integrację systemu ogrzewania i chłodzenia (zmniejszyć) zapotrzebowanie na energię.
 
 
 ## Przypisy
