@@ -1,0 +1,17 @@
+Description: Experimental Results involving transesterification of rapeseed
+oil in 3 alcohols (methanol, ethanol, and 1-propanol). Three factors were
+varied: temperature (250, 300, 350C), pressure (8, 10, 12 MPa),
+and time (7,15,20,...,60,65 min). Yields of each alcohol type (%)
+and Energy consumption of each alcohol type (kW h/kg) were reported.
+
+Variable Names
+run_id
+b_temp
+b_press
+b_time
+meth_pct
+meth_ec
+eth_pct
+eth_ec
+prop1_pct
+prop1_ec
