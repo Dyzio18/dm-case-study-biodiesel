@@ -53,6 +53,8 @@ prop1_ec <- as.numeric(unlist(df["prop1_ec"]))
 prop1_pct <- as.numeric(unlist(df["prop1_pct"]))
 
 # 
+# 
+# 
 plot(c(meth_ec,eth_ec,prop1_ec), c(meth_pct,eth_pct,prop1_pct), pch = 15, col = c("#9055A2" ,"#011638", "#D499B9") )
 
 
