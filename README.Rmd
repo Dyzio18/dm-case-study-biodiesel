@@ -22,6 +22,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r include = FALSE}
+# install.packages("corrplot")
+library(corrplot)
+library(plotly)
+library(magrittr)
+
 df <- read.csv("biodiesel.csv", header = TRUE, stringsAsFactors=FALSE)
 
 temperature <-  as.numeric(unlist(df["temperature"])) 
@@ -95,7 +100,15 @@ W pliku z wynikami doświadczenia zarejestrowano 105 pomiarów o ponizszych para
 * prop1_ec - konsumpcja energii dla propanol-1
 
 
+### 2.1 Wizualizacja danych
 
+```{r}
+plot_ly(data = df, x = df$meth_pct, y = df$meth_ec, name = 'metanol', type = 'scatter', mode = 'markers',  text = ~paste("Stężenie alkoholu: ", df$meth_pct, ' %<br>Konsumpcja energii:', df$meth_ec)) %>%
+  add_trace(y = df$eth_ec, name = 'etanol', mode = 'markers', text = ~paste("Stężenie alkoholu: ", df$eth_pct, ' %<br>Konsumpcja energii:', df$eth_ec)) %>%
+  add_trace(y = df$prop1_ec, name = 'propanol', mode = 'markers', text = ~paste("Stężenie alkoholu: ", df$prop1_pct, ' %<br>Konsumpcja energii:', df$prop1_ec)
+)
+
+```
 
 ## 3. Przygotowanie i analiza danych
 Dane mają charakter tabelaryczny. Przypadki nie są z sobą powiązane, zmieniają się natomiast parametry pomiarów.
@@ -111,7 +124,7 @@ summary(df[2:10])
 
 ### 3.2 Histogramy
 
-#### Wpływ czasu na reakcje {.tabset .tabset-fade .tabset-pills}
+#### Wpływ temperatury na reakcje {.tabset .tabset-fade .tabset-pills}
 
 ##### Ogólny
 ```{r include=TRUE}
@@ -149,7 +162,7 @@ Na podstawie histogramu konsumpcji energi do temperatury możemy wnioskować że
 ##### Ogólny
 ```{r}
 boxplot( (meth_ec + eth_ec + prop1_ec)/3 ~ time, data = df, col = "lightgray", varwidth = TRUE, 
-        main = "Konsumpcja energii a czas",
+        main = "Konsumpcja energii a czas (średnia)",
         ylab = "Konsumpcja energii (kW h/kg)",xlab = "Czas w minutach")
 ```
 
@@ -212,7 +225,7 @@ boxplot(prop1_ec ~ pressure, data = df, col = "lightgray", varwidth = TRUE,
 Ciśnienie podobnie jak czas nie wpływa znacząco na reakcje. Możemy zauważyć jednak ze wraz ze wzrostem ciśnienia maleje konsumpcja energii. Dla reakcji w wysokich temperaturach rola ciśnienia może rosnąć. 
  
  
-### 3.3 Wykresy punktowe'
+### 3.3 Wykresy punktowe
 
 ```{r}
 plot(c(meth_ec,eth_ec,prop1_ec), c(meth_pct,eth_pct,prop1_pct), pch = 15, col = c("#9055A2" ,"#011638", "#D499B9"), main = "Stężenie alkoholu a konsumpcja energi w procesie transestryfikacji", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
@@ -220,31 +233,136 @@ plot(c(meth_ec,eth_ec,prop1_ec), c(meth_pct,eth_pct,prop1_pct), pch = 15, col = 
 
 ```
 
-Wraz ze spadkiem stężenia procentowego wydajność procesu maleje. Na powyższych histogramach mogliśmy dostrzec pojedyńcze punkty poza ramą - były to przypadki o niskim stężeniu procentowym (poniżej 25%). Na podstawie tego wykresu możemy stwierdzić że wydajność reakcji zależy w dużym stopniu od zawartości alkoholu.
+Wraz ze spadkiem stężenia procentowego wydajność procesu maleje. Na powyższych histogramach mogliśmy dostrzec pojedyńcze punkty poza ramą o wysokim poborze energii - były to przypadki o niskim stężeniu procentowym (poniżej 25%). Na podstawie tego wykresu możemy stwierdzić że wydajność reakcji zależy w dużym stopniu od zawartości alkoholu.
  
+
+### 3.4 Korelacja
+
+#### Korelacja w zależności od temperatury {.tabset .tabset-fade .tabset-pills}
+
+##### Ogólny
+
+``` {r}
+dataCorrelation <- cor(df[2:10], method = "pearson")
+corrplot(dataCorrelation, method = "number", order = "AOE")
+```
+
+##### Dla 250 °C
+``` {r}
+df250 <- subset(df[2:10], temperature==250)
+dataCorrelation <- cor(df250[2:9], method = "pearson")
+corrplot(dataCorrelation, method = "number", order = "AOE")
+```
+
+
+
+##### Dla 300 °C
+``` {r}
+df300 <- subset(df[2:10], temperature==300)
+dataCorrelation <- cor(df300[2:9], method = "pearson")
+corrplot(dataCorrelation, method = "number", order = "AOE")
+```
+
+##### Dla 350 °C
+``` {r}
+df350 <- subset(df[2:10], temperature==350)
+dataCorrelation <- cor(df350[2:9], method = "pearson")
+corrplot(dataCorrelation, method = "number", order = "AOE")
+```
+
+####
+Wykres korelacji dla całego zbioru danych wskazuje na silną korelację między żużyciem energi a stężeniem procentowym oraz w umiarkowanym stopniu z temperaturą. Czas reakcji i ciśnienie mają słaby lub nie znaczący zwiazek z wydajnością reakcji.
+
+Na podstawie wcześniej założonej hipotezy która mówi że "Czas i ciśnienie mają większy wpływ na wydajność w wyższych temperaturach" postanowiłem zbadać korelację dla poszczególnych temperatur. 
+Dla temperatury 300 °C oraz 350 °C korelacja między wydajnościa a czasem i ciśnieniem znacząco rośnie.
+Potwierdziło to hipoteze że wraz ze wzrostem temperatury, czynniki takie jak czas i ciśnienie wpływają na wydajność procesu zależnie od pochodnej alkanu.
 
 
 ## 4. Modelowanie
 
+Wylosowane modele do zamodelowania procesu to:
+
+* Model regresji wielorakiej
+
+* Model naiwny
+
+* ARIMA
+
+### 4.1 Model regresji wielorakiej
+
+Ogólnym celem regresji wielorakiej jest ilościowe ujęcie związków pomiędzy wieloma zmiennymi niezależnymi (objaśniającymi) a zmienną zależną (kryterialną, objaśnianą). Model ten bardzo dobrze nadaje się do modelowania wyników analizowanego eksperymentu.
 
 
-## Wnioski
+``` {r}
+# Multiple (Linear) Regression
+mlr <- lm(df$eth_ec ~ df$eth_pct + df$temperature + df$time + df$pressure, data = df)
+mlrB <- lm(df$eth_ec ~ df$eth_pct + df$temperature, data = df)
 
-Temperatura miała największy wpływ na wydajność, a następnie czas reakcji i ciśnienie. Przy zwiększonej masie cząsteczkowej alkoholi, względne znaczenie temperatury dla wyjaśnienia wydajności spadło, a względne znaczenie czasu i ciśnienia wzrosło. Ocena ekonomiczna wykazała, że transestryfikacja w metanolu nadkrytycznym ma najniższe bezpośrednie koszty materiałowe i energetyczne. Wydajność ma decydujący wpływ na ekonomikę procesu. Bezpośrednie koszty maleją wraz ze wzrostem wydajności biodiesla. Nawet przy bardzo niskich cenach surowca naftowego najniższy koszt osiąga się z najwyższą wydajnością.
+mlrCoefficient <- coefficients(mlr)
+```
+
+#### 4.1.2 Wykres
+
+Poniżej zestawienie konsumpcji energi dla etanolu i stworzonego modelu. Model dosyć dobrze opisuje wyniki prawdziwej reakcji. 
+
+``` {r}
+eth_ec_new <- mlr$model$`df$eth_ec`
+plot(c(eth_ec_new,eth_ec), c(eth_pct,eth_pct), pch = 15, col = c("red" ,"blue"), main = "Stężenie alkoholu a konsumpcja energi w procesie transestryfikacji", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
+
+```
+
+
+#### 4.1.3 Diagnostyka modelu
+``` {r}
+# diagnostic plots 
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(mlr)
+```
+
+#### 4.1.4 Anova
+
+``` {r}
+anova(mlr, mlrB)
+
+
+```
+
+
+
+
+
+
+### 4.2 Model naiwny
+
+...
+
+### 4.3 ARIMA
+
+Model ARIMA jest uogólnieniem modelu autoregresyjnej średniej ruchomej (ARMA). Oba te modele są dopasowane do danych szeregów czasowych, aby lepiej zrozumieć dane lub przewidzieć przyszłe punkty w serii (prognozowanie).
+Modele ARIMA są stosowane w niektórych przypadkach, w których dane wskazują na niestacjonarność, gdzie początkowy etap różnicowania (odpowiadający "zintegrowanej" części modelu) można zastosować jeden lub więcej razy, aby wyeliminować niestacjonarność.
+
+Analizowane dane nie miały postaci szeregu czasowego w związku z tym model ten nie został zastosowany w analizie.
+
+
+
+## 5. Wnioski
+
+Temperatura miała największy wpływ na wydajność, a następnie czas reakcji i ciśnienie. Przy zwiększonej masie cząsteczkowej alkoholi, względne znaczenie temperatury dla wyjaśnienia wydajności spadło, a względne znaczenie czasu i ciśnienia wzrosło. Ocena ekonomiczna wykazała, że transestryfikacja w metanolu nadkrytycznym ma najniższe bezpośrednie koszty materiałowe i energetyczne. Wydajność ma decydujący wpływ na ekonomikę procesu. Bezpośrednie koszty maleją wraz ze wzrostem wydajności biodiesla.
  
+Pierwotne parametry do uzyskania wysokiej konwersji transestryfikacji były wysokie
+temperatura (330-350 ° C), wysokie ciśnienie (19-35 MPa) i wysoki stosunek molowy alkoholu do oleju
+(1:40 - 1:42). Rzeczywiście, wysoka temperatura i ciśnienie wymagają zarówno drogiego reaktora
+oraz wyrafinowaną politykę zarządzania energią i bezpieczeństwem. W wyniku wysokiej alkoholu do
+stosunek molarny oleju, duże zużycie energii w etapach wstępnego podgrzewania i recyklingu substratów
+jest wymagane. Ponadto wysoka zawartość alkoholu w produkcie biodiesel opóźnia
+Rozdzielanie faz biodiesla i glicerolu. Dlatego też uzyskuje się wykorzystanie tych pierwotnych parametrów
+wysokie koszty inwestycyjne, zwłaszcza w przypadku reaktora i pompy, są nieco wyższe niż w przypadku reaktora
+nowatorskie metody katalityczne.
+Aby zwiększyć techniczną i ekonomiczną wykonalność transestryfikacji nadkrytycznej,
+wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów operacyjnych
+ten proces. Na przykład można poprawić integrację systemu ogrzewania i chłodzenia
+(zmniejszyć) zapotrzebowanie na energię.
 
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
 ## Przypisy
 1. Andrzej Roszkowski, Biodiesel w UE i Polsce obecne uwarunkowania i perspektywy, „Problemy inżynierii rolniczej”, 77 (3), Wydawnictwo Instytutu Technologiczno-Przyrodniczego, 2012, s. 65-67, ISSN 1231-0093
@@ -255,4 +373,3 @@ plot(pressure)
 
 4. Somkiat Ngamprasertsith and Ruengwit Sawangkeaw, Transesterification in Supercritical Conditions 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
