@@ -38,6 +38,11 @@ eth_pct <- as.numeric(unlist(df["eth_pct"]))
 prop1_ec <- as.numeric(unlist(df["prop1_ec"]))
 prop1_pct <- as.numeric(unlist(df["prop1_pct"]))
 
+
+mse <- function(oryginal, model){
+    mean((c(oryginal[30], oryginal[60], oryginal[90]) - c(model[30], model[60], model[90]))^2)
+}
+
 ```
 
 
@@ -122,7 +127,7 @@ Dane nie wymagały czyszczenia, nie wykryto anomali oraz dziur.
 summary(df[2:10])
 ```
 
-### 3.2 Histogramy
+### 3.2 Wykresy ramka-wąsy
 
 #### Wpływ temperatury na reakcje {.tabset .tabset-fade .tabset-pills}
 
@@ -155,7 +160,7 @@ boxplot(prop1_ec ~ temperature, data = df, col = "lightgray", varwidth = TRUE,
 ```
 
 ####
-Na podstawie histogramu konsumpcji energi do temperatury możemy wnioskować że im wyższa temperatura tym reakcja potrzebuje mniej energii. Reakcja transestryfikacji jest bardziej wydajna w wyższych temperaturach.
+Na podstawie wykresu konsumpcji energi do temperatury możemy wnioskować że im wyższa temperatura tym reakcja potrzebuje mniej energii. Reakcja transestryfikacji jest bardziej wydajna w wyższych temperaturach.
 
 #### Wpływ czasu na reakcje {.tabset .tabset-fade .tabset-pills}
 
@@ -233,7 +238,7 @@ plot(c(meth_ec,eth_ec,prop1_ec), c(meth_pct,eth_pct,prop1_pct), pch = 15, col = 
 
 ```
 
-Wraz ze spadkiem stężenia procentowego wydajność procesu maleje. Na powyższych histogramach mogliśmy dostrzec pojedyńcze punkty poza ramą o wysokim poborze energii - były to przypadki o niskim stężeniu procentowym (poniżej 25%). Na podstawie tego wykresu możemy stwierdzić że wydajność reakcji zależy w dużym stopniu od zawartości alkoholu.
+Wraz ze spadkiem stężenia procentowego wydajność procesu maleje. Na powyższych wykresach mogliśmy dostrzec pojedyńcze punkty poza ramą o wysokim poborze energii - były to przypadki o niskim stężeniu procentowym (poniżej 25%). Na podstawie tego wykresu możemy stwierdzić że wydajność reakcji zależy w dużym stopniu od zawartości alkoholu.
  
 
 ### 3.4 Korelacja
@@ -288,53 +293,214 @@ Wylosowane modele do zamodelowania procesu to:
 
 * ARIMA
 
-### 4.1 Model regresji wielorakiej
+### 4.1 Model regresji wielorakiej 
 
-Ogólnym celem regresji wielorakiej jest ilościowe ujęcie związków pomiędzy wieloma zmiennymi niezależnymi (objaśniającymi) a zmienną zależną (kryterialną, objaśnianą). Model ten bardzo dobrze nadaje się do modelowania wyników analizowanego eksperymentu.
+### 4.1.1 Wstęp
+
+Ogólnym celem regresji wielorakiej jest ilościowe ujęcie związków pomiędzy wieloma zmiennymi niezależnymi (objaśniającymi) a zmienną zależną (kryterialną, objaśnianą). Model ten bardzo dobrze nadaje się do modelowania wyników analizowanego eksperymentu. 
+Ogólna postać regresji wielorakiej ma postać: `Y = a + b1*X1 + b2*X2 + ... + bp*Xp`
+
+
+Wśród wylosowanych modeli regresja wieloraka najlepiej nadaje się do zamodelowania zjawiska nadkrytycznej transestryfikacji. Przypadki sa z sobą luźno powiązane jednak możemy znaleźć zależności od zmiennych (temperatury, stężenia, ciśnenia i czasu)
+
+Modelowaną zmienną będzie konsumcja energii, a wyrażenie bedzie miało postać:
+
+**EC = A + a1 x stężenie + a2 x temperatura + a3 x czas + a4 x ciśnienie**
+
+Gdzie:
+
+* EC - konsumcja energii
+
+* A - stała dla równania
+
+* a1, a2, a3, a4 - współczynniki dla zmiennych niezależnych
+
+Postanowiłem wykonać trzy modele dla kazdego rodzaju alkoholu. Pomimo że wszystkie trzy substancje to pochodne alkanów to różnice między nimi są znaczące. Modelowanie ich wprowadzając masę molową jako dodatkową zmienną przy testach nie przyniosło porządanych rezultatów gdyż dynamika procesów chemicznych między nimi jest zbyt duża by stworzyć dokładne modele. 
+
+Sięgając po literaturę techniczną na temat transestryfikacji z alkoholami krytycznymi możemy zauwazyć że cięższe alkohole nie są brane pod uwagę w tym procesie. Ich reakcja z tłuszczami jest zbyt kosztowna. Etanol i propanol wprowadzono w eksperymencie dla porównania. W przemysłowej transestryfikacji używa się przeważnie podstawowego metanolu.   
+
+### 4.1.2 Model dla metanolu
 
 
 ``` {r}
 # Multiple (Linear) Regression
-mlr <- lm(df$eth_ec ~ df$eth_pct + df$temperature + df$time + df$pressure, data = df)
-mlrB <- lm(df$eth_ec ~ df$eth_pct + df$temperature, data = df)
-
-mlrCoefficient <- coefficients(mlr)
+mlr <- lm(df$meth_ec ~ df$meth_pct + df$temperature + df$time + df$pressure, data = df)
+mlrCoe <- coefficients(mlr)
+modelMultipleRegression_meth = mlrCoe[1] + mlrCoe[2] * df$meth_pct + mlrCoe[3] * df$temperature + mlrCoe[4] * df$time + mlrCoe[5] * df$pressure 
 ```
 
-#### 4.1.2 Wykres
 
-Poniżej zestawienie konsumpcji energi dla etanolu i stworzonego modelu. Model dosyć dobrze opisuje wyniki prawdziwej reakcji. 
+
+Równanie regresji wielorakiej:
+``` {r}
+paste("EC = ",mlrCoe[1], " + ",  mlrCoe[2],  "x stężenie + ", mlrCoe[3], "x temperatura + ", mlrCoe[4], " x czas + ", mlrCoe[5], " x ciśnienie", collapse="")
+
+```
+
+
+
+Korelacja z modelem: 
+``` {r}
+# Korelacja modelu i danych
+cor(meth_ec, modelMultipleRegression_meth)
+
+``` 
+
+
+
+Wykres danych rzeczywistych (niebieski) i modelu (czerwony)
 
 ``` {r}
-eth_ec_new <- mlr$model$`df$eth_ec`
-plot(c(eth_ec_new,eth_ec), c(eth_pct,eth_pct), pch = 15, col = c("red" ,"blue"), main = "Stężenie alkoholu a konsumpcja energi w procesie transestryfikacji", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
+plot(c(modelMultipleRegression_meth,meth_ec), c(meth_pct,meth_pct), pch = 15, col = c("red" ,"blue"), main = "Stężenie alkoholu a konsumpcja energi", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
+```
 
+``` {r}
+# Histogram reszt
+hist(mlr$residuals, breaks = 12, main = "Histogram reszt", xlab = "Odchylenie modelu", ylab = "Wystąpienia")
 ```
 
 
-#### 4.1.3 Diagnostyka modelu
+Dodatkowa diagnostyka modelu
 ``` {r}
 # diagnostic plots 
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
 plot(mlr)
 ```
 
-#### 4.1.4 Anova
+
+MSE: 
+``` {r}
+mse(meth_ec,modelMultipleRegression_meth )
+```
+
+
+### 4.1.3 Model dla etanolu
 
 ``` {r}
-anova(mlr, mlrB)
+# Multiple (Linear) Regression
+mlr <- lm(df$eth_ec ~ df$eth_pct + df$temperature + df$time + df$pressure, data = df)
+mlrCoe <- coefficients(mlr)
+modelMultipleRegression_eth = mlrCoe[1] + mlrCoe[2] * df$eth_pct + mlrCoe[3] * df$temperature + mlrCoe[4] * df$time + mlrCoe[5] * df$pressure 
+```
 
+
+
+Równanie regresji wielorakiej:
+``` {r}
+paste("EC = ",mlrCoe[1], " + ",  mlrCoe[2],  "x stężenie + ", mlrCoe[3], "x temperatura + ", mlrCoe[4], " x czas + ", mlrCoe[5], " x ciśnienie", collapse="")
 
 ```
 
 
 
+Korelacja z modelem: 
+``` {r}
+# Korelacja modelu i danych
+cor(eth_ec, modelMultipleRegression_eth)
 
+``` 
+
+
+
+Wykres danych rzeczywistych (niebieski) i modelu (czerwony)
+
+``` {r}
+plot(c(modelMultipleRegression_eth,eth_ec), c(eth_pct,eth_pct), pch = 15, col = c("red" ,"blue"), main = "Stężenie alkoholu a konsumpcja energi", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
+```
+
+``` {r}
+# Histogram reszt
+hist(mlr$residuals, breaks = 12, main = "Histogram reszt", xlab = "Odchylenie modelu", ylab = "Wystąpienia")
+```
+
+
+
+Dodatkowa diagnostyka modelu
+``` {r}
+# diagnostic plots 
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(mlr)
+```
+
+MSE: 
+``` {r}
+mse(eth_ec,modelMultipleRegression_eth )
+
+```
+
+
+
+### 4.1.4 Model dla propanol-1
+
+``` {r}
+# Multiple (Linear) Regression
+mlr <- lm(df$prop1_ec ~ df$prop1_pct + df$temperature + df$time + df$pressure, data = df)
+mlrCoe <- coefficients(mlr)
+modelMultipleRegression_prop1 = mlrCoe[1] + mlrCoe[2] * df$prop1_pct + mlrCoe[3] * df$temperature + mlrCoe[4] * df$time + mlrCoe[5] * df$pressure 
+```
+
+
+
+Równanie regresji wielorakiej:
+``` {r}
+paste("EC = ",mlrCoe[1], " + ",  mlrCoe[2],  "x stężenie + ", mlrCoe[3], "x temperatura + ", mlrCoe[4], " x czas + ", mlrCoe[5], " x ciśnienie", collapse="")
+
+```
+
+
+
+Korelacja z modelem: 
+``` {r}
+# Korelacja modelu i danych
+# pearson 0,848
+# spearman 0,923
+# kendall 0,776
+cor(prop1_ec, modelMultipleRegression_prop1)
+
+``` 
+
+Wykres danych rzeczywistych (niebieski) i modelu (czerwony)
+
+``` {r}
+plot(c(modelMultipleRegression_prop1,prop1_ec), c(prop1_pct,prop1_pct), pch = 15, col = c("red" ,"blue"), main = "Stężenie alkoholu a konsumpcja energi", xlab = "Konsumpcja energii (kW h/kg)", ylab = "Stężenie procentowe alkoholu %")
+```
+
+``` {r}
+# Histogram reszt
+hist(mlr$residuals, breaks = 12, main = "Histogram reszt", xlab = "Odchylenie modelu", ylab = "Wystąpienia")
+```
+
+
+Dodatkowa diagnostyka modelu
+``` {r}
+# diagnostic plots 
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(mlr)
+```
+
+MSE: 
+``` {r}
+mse(prop1_ec,modelMultipleRegression_prop1 )
+
+```
+
+
+### 4.1.4 Podsumowanie
+
+Utworzono modele regresji wielorakiej dla 3 różnych alkoholi. Korelacja (pearson'a) między modelem a danymi wynosiła w granicach 0.84 - 0.88 natomiast spermana w okolicach 0,90 - 0.95.
+Modele dosyć dobrze modelowały zjawisko za wyjątkiem skrajnych przypadków gdzie stężenie procentowe alkoholu było ponizej 25%. 
+
+Średni kwadratowy błąd dla modeli był stosunkowo niski co czyni model akceptowalnym.
+Reszty wpasowały się w rozkład normalny poza pojednyńczymi przypadkami dla wartości skrajnych z wysokim pobórem energii.
+
+Być może model można byłoby poprawić wprowadzająć wagi dla czasu i cisnienia podczas wyższych temperatur. Pozwoliło by to na lepsze modelowanie procesu w warunkach krytycznych.
 
 
 ### 4.2 Model naiwny
 
-...
+Metoda ta stosowana jest przy stałym poziomie zjawiska i niewielkich wahaniach przypadkowych (niski współczynnik zmienności V<5-10%) i przy założeniu, że nie wystąpią istotne zmiany najważniejszych czynników.
+
+W związku z tym że analizowane dane nie miały postaci szeregu czasowego oraz spodziewana jakość prognoz jest niska nie uwzględniłem tego modelu w swojej analizie.
 
 ### 4.3 ARIMA
 
@@ -344,25 +510,49 @@ Modele ARIMA są stosowane w niektórych przypadkach, w których dane wskazują 
 Analizowane dane nie miały postaci szeregu czasowego w związku z tym model ten nie został zastosowany w analizie.
 
 
+## 5. Prognozy i ocena
 
-## 5. Wnioski
+W swojej pracy skupiłem się na regresji wielorakiej gdyż pozostałe modele nie miały zastosowania przy tego typu danych. Dane były wynikiem reakcji chemicznej i były sciśle zwiazane z parametrami reakcji.  
 
-Temperatura miała największy wpływ na wydajność, a następnie czas reakcji i ciśnienie. Przy zwiększonej masie cząsteczkowej alkoholi, względne znaczenie temperatury dla wyjaśnienia wydajności spadło, a względne znaczenie czasu i ciśnienia wzrosło. Ocena ekonomiczna wykazała, że transestryfikacja w metanolu nadkrytycznym ma najniższe bezpośrednie koszty materiałowe i energetyczne. Wydajność ma decydujący wpływ na ekonomikę procesu. Bezpośrednie koszty maleją wraz ze wzrostem wydajności biodiesla.
- 
+Model regresji wielorakiej najlepiej opisuje to zjawisko. Udało się stworzyć trzy modele dla kazdego z alkoholi które z dobrą jakościa przedstawiają zjawisko. Modele te mogą służyć w procesie optymalizacji procesu transestryfikacji nadkrytycznej. 
+
+Za pomocą funkcji równań regresji wielorakiej (przedstawionych dla każdego z alkoholi) możemy dosyć dobrze zamodelować zużycie energii. Model ten w można zastosować w eksperymencie o podobnych parametrach. 
+Do stworzenia lepszego modelu potrzebne były by pomiary w bardziej krytycznych warunkach. Literatura techniczna podaje ze reakcje taką można przeprowadzać pod ciśnieniem 55 MPa, 99,5% czystości alkoholu metylowym i etylowym oraz w temperaturach siegajacych do 650 °C.
+
+
+
+## 6. Wnioski i uwagi
+
+### 6.1 Wnioski
+
+Temperatura i stężenie alkoholu miały największy wpływ na wydajność, a następnie czas reakcji i ciśnienie. Przy zwiększonej masie cząsteczkowej alkoholi, względne znaczenie temperatury dla wyjaśnienia wydajności spadło, a względne znaczenie czasu i ciśnienia wzrosło. Ocena ekonomiczna wykazała, że transestryfikacja w metanolu nadkrytycznym ma najniższe bezpośrednie koszty materiałowe i energetyczne. Wydajność ma decydujący wpływ na ekonomikę procesu. Bezpośrednie koszty maleją wraz ze wzrostem wydajności biodiesla.
+
 Pierwotne parametry do uzyskania wysokiej konwersji transestryfikacji były wysokie
 temperatura (300-350 ° C), wysokie ciśnienie (8-12 MPa) i wysoki stosunek molowy alkoholu do oleju
-(1:40 - 1:42). Wysoka temperatura i ciśnienie wymagają zarówno drogiego reaktora
+(1:42). Wysoka temperatura i ciśnienie wymagają zarówno drogiego reaktora
 oraz wyrafinowaną politykę zarządzania energią i bezpieczeństwem. W wyniku wysokiej zawartości alkoholu do
-stosunek molowego oleju, duże zużycie energii w etapach wstępnego podgrzewania i recyklingu substratów
-które jest wymagane. Ponadto wysoka zawartość alkoholu w produkcie biodiesel opóźnia
-Rozdzielanie faz biodiesla i glicerolu. Dlatego też uzyskuje się wykorzystanie tych pierwotnych parametrów
-wysokie koszty inwestycyjne, zwłaszcza w przypadku reaktora i pompy, są nieco wyższe niż w przypadku reaktora
-nowatorskiej metody katalitycznej.
-Aby zwiększyć techniczną i ekonomiczną wykonalność transestryfikacji nadkrytycznej,
-wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów operacyjnych ten proces. Na przykład można poprawić integrację systemu ogrzewania i chłodzenia (zmniejszyć) zapotrzebowanie na energię.
+stosunek molowego oleju, wymagane jest duże zużycie energii w etapach wstępnego podgrzewania i recyklingu substratów które jest wymagane. 
+
+Ponadto wysoka zawartość alkoholu w produkcie biodiesela opóźnia rozdzielanie faz biodiesla i glicerolu. Dlatego też uzyskuje się wykorzystanie tych pierwotnych parametrów powoduje wysokie koszty inwestycyjne, zwłaszcza w przypadku reaktora i pompy, są nieco wyższe niż w przypadku reaktora nowatorskiej metody katalitycznej.
+
+Aby zwiększyć techniczną i ekonomiczną wykonalność transestryfikacji nadkrytycznej, wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów optymalizując ten proces. Na przykład można poprawić integrację systemu ogrzewania i chłodzenia (zmiejszenie) zapotrzebowanie na energię.
 
 
-## Przypisy
+### 6.2 Uwagi
+
+Podane dane wymagały dogłębnego zrozumienia tematu i procesów zachodzących podczas reakcji chemicznej. 
+Najwięcej czasu spędziłem na analizie zjawiska i samego precesu. Początkowo  analizowałem ogólny proces estryfikacji z użyciem katalizatorów. Sporo czasu zajeło mi zrozumienie dlaczego moje wyniki nie są zgodne z opisem zjawiska. W przedstawionych danych chodzi o estryfikacje nadkrytyczną która jest stosutkowo nową i eksperymentalną metodą. 
+
+Nie badałem wydajności samej mieszanki gdyż dane wzkazywały tylko na koncumpcje energii podczas samego procesu. Założyłem że wydajność stworzonej mieszanki jest taka sama lub nie jest brana pod uwagę. Dla lepszego modelowania procesu optymalizacji powinniśmy posiadać również dane o energetyczności wytworzonego paliwa i porównać je z energią potrzebną do wywołania reakcji. 
+
+Skupiłem się na modelu regresji wielorakiej gdyż tylko ten model miał możliwość realnej symulacji zjawiska z pozytywnym wynikiem. 
+
+Model naiwny oraz ARIMA stosuje się przeważnie do szeregów czasowych. W związku z otrzymaniem dobrego modelu zjawiska przy użyciu regresji wielorakiej nie uwzględniłem pozostałych dwóch modeli z powodu przewidywanej niskiej jakości prognoz.
+
+Całość analizy została wykonana w jezyku R przy użyciu RMarkdown. Wynikiem analizy jest plik HTML z raportem końcowym. Kod źródłowy dostępny jest pod adresem:  [https://github.com/Dyzio18/dm-case-study-biodiesel](https://github.com/Dyzio18/dm-case-study-biodiesel])
+
+
+## Dodatkowe materiały
 1. Andrzej Roszkowski, Biodiesel w UE i Polsce obecne uwarunkowania i perspektywy, „Problemy inżynierii rolniczej”, 77 (3), Wydawnictwo Instytutu Technologiczno-Przyrodniczego, 2012, s. 65-67, ISSN 1231-0093
 
 2. https://podatki.gazetaprawna.pl/artykuly/92098,biopaliwa-zgodnie-z-rozporzadzeniem-sa-objete-ulga-w-podatku-akcyzowym.html 
@@ -370,4 +560,6 @@ wymagane są dalsze badania w celu zmniejszenia zużycia energii i parametrów o
 3. Sujeeta Karki, Nawaraj Sanjel, Jeeban Poudel, Ja Hyung Choi and Sea Cheon Oh, Supercritical Transesterification of Waste Vegetable Oil: Characteristic Comparison of Ethanol and Methanol as Solvents, 2017
 
 4. Somkiat Ngamprasertsith and Ruengwit Sawangkeaw, Transesterification in Supercritical Conditions 
+
+5. https://www.intechopen.com/books/biofuels-state-of-development/kinetics-of-transesterification-pro
 
